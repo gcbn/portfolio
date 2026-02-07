@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" id="top">
+  <head>
+    <meta charset="utf-8">
+
+    <link rel="icon" href="../assets/images/favicon.ico">
+    <title>NBA Vision</title>
+    <meta name="description" content="Computer vision project to map plays from TV footage into a 2D representation.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light'
+      } catch (_) {
+        document.documentElement.dataset.theme = 'light'
+      }
+    </script>
+
+    <link rel="stylesheet" href="../css/site.css">
+    <link rel="stylesheet" href="../css/projects.css">
+
+    <script defer src="../js/script.js"></script>
+  </head>
+  <body class="project-theme-glass" data-root="../">
+    <div id="navbar"></div>
+
+    <div id="main-content">
+      <div class="project-shell">
+        <div class="project-hero">
+          <div class="hero-top">
+            <div class="main-title">NBA Vision</div>
+            <div class="body-text hero-subtitle">
+              Computer vision project to map plays from TV footage of NBA games into a 2D representation.
+            </div>
+          </div>
+
+            <div class="hero-actions">
+              <a class="button" href="../assets/pdfs/nba-vision.pdf">
+                <span class="button-text">Report (PDF)</span>
+                <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+              </a>
+              <a class="button" href="#results">
+                <span class="button-text">Results</span>
+                <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+              </a>
+            </div>
+          </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Overview</div>
+              <h2 class="section-title subheader-text">Gameplay Reconstruction using NBA TV Footage</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="nv-grid-1">
+              <div class="nv-card">
+                <div class="nv-card-title">Motivation</div>
+                <div class="body-text nv-muted">
+                  In the world of sports, technology has revolutionised how games are played, analysed, and experienced. The sports analytics market is projected to grow from <b>$3.78B (2023)</b>
+                  to <b>$22.13B (2030)</b>. In basketball, the most valuable tracking data is largely exclusive to professional teams and major broadcasters, limiting public engagement with the analytical side of the game.
+                </div>
+                <div class="body-text nv-muted u-mt-10">
+                  This project is a proof of concept: using <b>publicly available broadcast clips</b>, reconstruct player movement on a <b>fixed 2D court</b> so fans can explore plays without specialised hardware.
+                </div>
+              </div>
+
+              <div class="nv-card">
+                <div class="nv-card-title">What I Built</div>
+                <div class="body-text nv-muted">
+                  An end-to-end pipeline that takes a single-play clip and outputs player positions (and short trails) on a fixed 2D court.
+                </div>
+                <ul class="bullet-list">
+                  <li><b>Input:</b> individual play clips sourced from publicly available footage</li>
+                  <li><b>Output:</b> a 2D court plot with per-player positions + recent trajectories</li>
+                  <li><b>Purpose:</b> foundation for building an open dataset of play movement data</li>
+                </ul>
+              </div>
+
+              <div class="nv-card">
+                <div class="nv-card-title">Processing Flow</div>
+                <ol class="nv-steps">
+                  <li><b>Detect players</b> per frame with a trained YOLOv8 model (PyTorch).</li>
+                  <li><b>Identify teams</b> from jersey colours (masking + consensus over time).</li>
+                  <li><b>Recover court geometry</b> (edges → Hough lines → intersections) and compute a homography.</li>
+                  <li><b>Track identities</b> with BoT-SORT + a custom re-identification layer (Hungarian assignment).</li>
+                  <li><b>Transform feet points</b> into 2D and render trajectories on a court diagram.</li>
+                </ol>
+              </div>
+
+              <figure class="nv-figure">
+                <img class="nv-figure-img" src="../assets/nba-vision/systemdesign.png" alt="System flow diagram showing court feature detection, homography, player detection, team identification, and tracking updates per frame.">
+                <figcaption class="body-text nv-muted">
+                  Pipeline overview: court feature detection drives the homography; detections and tracking produce 2D trajectories.
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+
+          <div class="section">
+            <div class="section-header-row">
+              <div>
+                <div class="section-kicker">Detection</div>
+                <h2 class="section-title subheader-text">Player Detection (YOLOv8)</h2>
+              </div>
+            </div>
+            <div class="section-body">
+              <div class="nv-grid-1">
+                <div class="nv-card">
+                  <div class="nv-card-title">Dataset and training setup</div>
+                  <div class="body-text nv-muted">
+                    I trained a YOLOv8 detector on a dataset tailored to NBA broadcast conditions: heavy occlusion, motion blur, varied court designs, and varied jersey colours.
+                    I also annotated referees and the hoop to reduce common confusions (refs in dark uniforms; hoop for future ball/shot extensions).
+                  </div>
+                  <ul class="bullet-list">
+                    <li><b>Stack:</b> Python + PyTorch + OpenCV + NumPy</li>
+                    <li><b>Dataset:</b> 250 labelled images from 89 games (all 30 teams), including players/referees/hoop</li>
+                    <li><b>Split:</b> 87% train / 8% val / 5% test + augmentations</li>
+                    <li><b>Training:</b> Google Colab (Tesla T4, 16GB) to avoid local GPU constraints</li>
+                  </ul>
+                </div>
+
+                <div class="nv-card">
+                  <div class="nv-card-title">Tuning</div>
+                  <div class="body-text nv-muted">
+                    I used training/validation loss curves and confusion matrices to decide when to stop training, then used precision–recall curves to pick a confidence threshold that balanced misses vs false detections.
+                  </div>
+                    <ul class="bullet-list u-mt-10">
+                      <li><b>Training duration:</b> selected based on validation stagnation + increased background false detections</li>
+                      <li><b>Diagnostics:</b> loss curves + normalised confusion matrix (e.g., player ↔ background/referee errors)</li>
+                      <li><b>Confidence threshold:</b> 0.5 from precision–recall curves (practical balance for downstream tracking)</li>
+                    </ul>
+                </div>
+              </div>
+
+                <figure class="nv-figure u-mt-14">
+                  <img class="nv-figure-img" src="../assets/nba-vision/detection.png" alt="Example broadcast frame with YOLO detections for players, referees, and hoop.">
+                  <figcaption class="body-text nv-muted">
+                  Example detections on broadcast footage (players + referees + hoop). This output feeds directly into team identification and tracking.
+                </figcaption>
+              </figure>
+
+                <figure class="nv-figure u-mt-14">
+                  <img class="nv-figure-img" src="../assets/nba-vision/pr_curve.png" alt="Precision–recall curve for the trained YOLOv8 detector.">
+                  <figcaption class="body-text nv-muted">
+                  Precision–recall curve used to pick a confidence threshold. I chose <b>0.5</b> to reduce false positives (which destabilise tracking) while keeping enough recall to avoid frequent dropouts.
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Classification</div>
+              <h2 class="section-title subheader-text">Team Identification (Jersey Colours)</h2>
+            </div>
+            </div>
+            <div class="section-body">
+              <div class="nv-grid-1">
+                <div class="nv-card">
+                  <div class="nv-card-title">Mask-based jersey classification</div>
+                  <div class="body-text nv-muted">
+                    Given a detected player bounding box, I classify the team by masking pixels that fall inside each team’s jersey colour range and comparing pixel ratios.
+                    The colour ranges include brightness tolerance (±20%) to handle lighting variance and shadows.
+                  </div>
+                  <ul class="bullet-list">
+                    <li>User specifies the two team colours for a game (current limitation)</li>
+                    <li>Apply per-team colour masks inside each player box</li>
+                    <li>Compute ratio of masked pixels to total pixels → assign team</li>
+                  </ul>
+                </div>
+
+                <div class="nv-card">
+                  <div class="nv-card-title">Stabilisation via tracking consensus</div>
+                  <div class="body-text nv-muted">
+                    Single-frame colour classification is noisy (occlusion, background leakage). In the integrated system, I keep a running count of team assignments per player ID
+                    and set team = majority vote over time.
+                  </div>
+                  <ul class="bullet-list">
+                    <li>Improves robustness to brief misclassifications</li>
+                    <li>Resists lighting changes and partial occlusions</li>
+                    <li>Directly improves downstream visualisations (cleaner team colouring)</li>
+                  </ul>
+                </div>
+              </div>
+
+                <figure class="nv-figure u-mt-14">
+                  <img class="nv-figure-img" src="../assets/nba-vision/teamid.png" alt="Team identification process: applying two colour masks to a player bounding box and comparing non-zero pixels to assign a team.">
+                  <figcaption class="body-text nv-muted">
+                  Team identification by colour masking: each bounding box is tested against two team masks, and the team is assigned based on which mask produces more non-zero pixels.
+                </figcaption>
+              </figure>
+
+                <figure class="nv-figure u-mt-14">
+                  <img class="nv-figure-img" src="../assets/nba-vision/teams.png" alt="Example team classification output where player detections are coloured by predicted team.">
+                  <figcaption class="body-text nv-muted">
+                  Example output: detections are coloured by predicted team after applying consensus over time.
+                </figcaption>
+              </figure>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Geometry</div>
+              <h2 class="section-title subheader-text">Court Mapping (Homography from Broadcast to 2D)</h2>
+            </div>
+            </div>
+            <div class="section-body">
+              <div class="nv-card">
+                <div class="nv-card-title">From 3D footage to a planar 2D court</div>
+                <div class="body-text nv-muted">
+                The court is treated as a planar surface. For a given frame, I identify four non-collinear correspondences between the broadcast view and a fixed 2D court diagram,
+                then compute a homography matrix <code>H</code> to transform points from the frame into the 2D court.
+              </div>
+              <div class="nv-eqn" aria-label="Homography equation">
+                x₂ ≈ H · x₁   (homogeneous coordinates; solve from ≥ 4 point correspondences)
+                </div>
+              </div>
+
+                <div class="nv-card u-mt-14">
+                  <div class="nv-card-title">Feature extraction via line geometry</div>
+                  <div class="body-text nv-muted">
+                  I initially tested classic feature matching (SIFT/SURF/ORB) to align a broadcast frame to a 2D court, but the court’s repeated textures (floorboards, repeated line segments),
+                  lighting differences, shadows, and occlusion led to unstable correspondences. The approach that worked reliably was to treat the court as a set of <b>straight lines</b>
+                  (baseline, far sideline, key boundaries) and recover stable intersections.
+                </div>
+              </div>
+
+                <div class="nv-card u-mt-14">
+                  <div class="nv-card-title">Step 1: Preprocess → Canny edges</div>
+                  <div class="body-text nv-muted">
+                  Court lines are easiest to detect after aggressive preprocessing. The exact parameters matter, so this stage required iterative tuning across multiple games/courts to avoid either
+                  losing court lines (too strict) or introducing too many spurious edges (too loose).
+                </div>
+                  <ul class="bullet-list u-mt-10">
+                    <li>Convert to grayscale to reduce complexity</li>
+                    <li>Gaussian blur to suppress noise</li>
+                  <li>Thresholding to simplify textures into high-contrast regions</li>
+                  <li>Morphological close to connect broken line segments</li>
+                  <li>Canny edge detection to extract clean line boundaries</li>
+                </ul>
+              </div>
+
+                <figure class="nv-figure u-mt-14">
+                  <img class="nv-figure-img" src="../assets/nba-vision/edges.png" alt="Six-panel preprocessing sequence from original frame to Canny edges: grayscale, blur, thresholding, morphological close, and edge detection.">
+                  <figcaption class="body-text nv-muted">
+                  Preprocessing pipeline used before line detection. This sequence shows how the frame is transformed into an edge map suitable for Hough line extraction.
+                </figcaption>
+              </figure>
+
+                <div class="nv-card u-mt-14">
+                  <div class="nv-card-title">Step 2: Hough line extraction → intersections → homography</div>
+                  <div class="body-text nv-muted">
+                  After edge detection, I used a probabilistic Hough transform (<code>HoughLinesP</code>) to extract court line segments. Because court lines can appear as multiple nearby segments
+                  (line thickness, double edges, noise), I grouped lines by similar gradient and intercept, then filtered outliers using a consensus approach (reject segments far from the median gradient).
+                  Once I had a stable set of lines in two dominant directions, I computed intersections and selected the four corner intersections as landmark points for that frame.
+                </div>
+                  <ul class="bullet-list u-mt-10">
+                    <li>Extract candidate segments with <code>HoughLinesP</code> (min length / max gap tuned)</li>
+                    <li>Convert segments → infinite lines (slope/intercept) for stable intersections</li>
+                  <li>Merge “duplicate” lines (similar slope/intercept within thresholds)</li>
+                  <li>Reject outlier lines via consensus around median slope</li>
+                  <li>Compute intersections and pick 4 non-collinear points</li>
+                  <li>Infer court side via sign of gradients; map to matching 2D court points</li>
+                  <li>Compute homography <code>H</code> and transform player “feet points” to 2D</li>
+                </ul>
+              </div>
+
+                <figure class="nv-figure u-mt-14">
+                  <img class="nv-figure-img" src="../assets/nba-vision/courtmapping.png" alt="Detected court lines overlaid on the broadcast frame and corresponding mapped points on a 2D court diagram.">
+                  <figcaption class="body-text nv-muted">
+                  Court mapping result: detected court lines (left) produce stable landmark points and a homography that maps player positions onto the 2D court (right).
+                </figcaption>
+              </figure>
+
+                <div class="nv-card u-mt-14">
+                  <div class="nv-card-title">Handling broadcast camera motion</div>
+                  <div class="body-text nv-muted">
+                  The camera pans and zooms, so feature points move constantly. Ideally we would re-detect features every frame, but that isn’t reliable. Instead, I periodically re-detect line features,
+                  and use optical flow to propagate point locations between detections.
+                </div>
+                  <ul class="bullet-list u-mt-10">
+                    <li>Check for new court features every 3 frames</li>
+                    <li>When features aren’t found, update existing points via optical flow</li>
+                  <li>Detect “bad remaps” / end-of-play via a distance threshold between old vs newly found points</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Tracking</div>
+              <h2 class="section-title subheader-text">Player Tracking (BoT-SORT + Custom Re-ID)</h2>
+            </div>
+            </div>
+            <div class="section-body">
+              <div class="nv-grid-1">
+                <div class="nv-card">
+                  <div class="nv-card-title">Base tracker</div>
+                  <div class="body-text nv-muted">
+                    I used YOLO’s integrated tracker (<code>model.track(frame)</code>) which leverages BoT-SORT to assign IDs and maintain them through occlusion.
+                    It performed well when detections were consistent, but struggled when players went undetected for multiple frames (IDs would reset).
+                </div>
+                <ul class="bullet-list">
+                    <li>Strength: strong short-term identity maintenance through occlusion</li>
+                    <li>Failure mode: missing detections → new IDs → more than 10 tracks</li>
+                  </ul>
+                </div>
+
+                <div class="nv-card">
+                  <div class="nv-card-title">Re-identification layer (Hungarian assignment)</div>
+                  <div class="body-text nv-muted">
+                    To keep identities consistent, I constrained the system to a stable set of 10 players: the first ten IDs are treated as the “valid” IDs.
+                    When the tracker introduces new IDs, I match them back to missing valid IDs using motion-based prediction and assignment optimisation.
+                </div>
+                <ul class="bullet-list">
+                  <li>Maintain per-player state: 2D position history, velocity, missed-frame count, jersey-team counts</li>
+                  <li>Predict next positions for missing players using velocity</li>
+                  <li>Build a cost matrix of Euclidean distances (predicted ↔ new detections)</li>
+                  <li>Solve with the <b>Hungarian method</b> + distance threshold checks</li>
+                    <li>Store new→original mapping in a lookup dict; drop tracks after too many missed frames</li>
+                  </ul>
+                </div>
+              </div>
+
+                <figure class="nv-figure u-mt-14">
+                  <img class="nv-figure-img" src="../assets/nba-vision/tracking.png" alt="Side-by-side example: broadcast play footage and reconstructed 2D court with player positions and trajectories.">
+                  <figcaption class="body-text nv-muted">
+                  End-to-end example output: broadcast footage (left) and reconstructed player trajectories on the 2D court (right).
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+
+          <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Integration</div>
+              <h2 class="section-title subheader-text">Putting It Together with OOP</h2>
+            </div>
+            </div>
+            <div class="section-body">
+              <div class="nv-grid-1">
+                <div class="nv-card">
+                  <div class="nv-card-title">Why OOP here</div>
+                  <div class="body-text nv-muted">
+                    This project is a pipeline of stateful components (mapping points over time, player tracks, ID lookups). I used OOP to encapsulate each responsibility, keep the main loop readable,
+                    and support iterative development/testing on individual modules.
+                </div>
+                <ul class="bullet-list">
+                  <li><b>Utility module:</b> feature finding, homography, jersey-colour detection, coordinate transform</li>
+                    <li><b>Mapping class:</b> manages court feature points and updates (re-detect + optical flow)</li>
+                    <li><b>Tracking class:</b> maintains identities, smoothing, re-identification, and “lost player” logic</li>
+                  </ul>
+                </div>
+
+                <div class="nv-card">
+                  <div class="nv-card-title">Runtime loop (per play)</div>
+                  <ul class="bullet-list">
+                    <li>Scan frames until court features are found → initialise <code>Mapping</code> + compute <code>H</code></li>
+                    <li>Every frame: update mapping points; periodically re-detect features</li>
+                  <li>Run detection + BoT-SORT tracking → apply team ID → transform feet points via <code>H</code></li>
+                  <li>Maintain exactly 10 stable identities (re-ID layer) and draw trajectories (last ~30 frames)</li>
+                </ul>
+                <div class="body-text nv-muted u-mt-10">
+                  This structure made it easy to diagnose failures (detection vs mapping vs tracking) and tune parameters without rewriting the whole pipeline.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+          <div class="section" id="results">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Testing</div>
+              <h2 class="section-title subheader-text">Results and What They Mean</h2>
+            </div>
+            </div>
+            <div class="section-body">
+              <div class="nv-kpi-grid">
+                <div class="nv-kpi">
+                  <div class="nv-kpi-label">Team ID accuracy</div>
+                  <div class="nv-kpi-value">90.1%</div>
+                  <div class="body-text nv-muted">With tracking consensus (vs 77.5% standalone).</div>
+                </div>
+                <div class="nv-kpi">
+                  <div class="nv-kpi-label">Consensus boost</div>
+                  <div class="nv-kpi-value">+12.6pp</div>
+                  <div class="body-text nv-muted">Majority vote over tracked IDs (77.5% → 90.1%).</div>
+                </div>
+                <div class="nv-kpi">
+                  <div class="nv-kpi-label">Stable identities</div>
+                  <div class="nv-kpi-value">10 players</div>
+                  <div class="body-text nv-muted">BoT-SORT + re-ID keeps consistent tracks through occlusion.</div>
+                </div>
+              </div>
+
+              <div class="nv-card u-mt-14">
+                <div class="nv-card-title">Interpreting these results</div>
+                <div class="body-text nv-muted">
+                The most reliable parts of the pipeline are detection and team colouring: the detector provides consistent player/ref/hoop boxes, and mask-based team ID becomes much more stable once aggregated
+                across tracked identities (rather than per-frame decisions).
+              </div>
+                <div class="body-text nv-muted u-mt-10">
+                    The main bottleneck for end-to-end reconstruction is court mapping: broadcast camera motion, occlusion, and court design variation can delay or destabilise feature recovery. When mapping is stable,
+                    tracking and the 2D trajectories look convincing; when mapping fails, the downstream output can’t be trusted regardless of detection quality.
+                  </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Evaluation</div>
+              <h2 class="section-title subheader-text">What Worked, What Didn’t, and What’s Next</h2>
+            </div>
+            </div>
+            <div class="section-body">
+              <div class="nv-grid-1">
+                <div class="nv-card">
+                  <div class="nv-card-title">Strengths</div>
+                  <ul class="bullet-list">
+                    <li>End-to-end pipeline demonstrates feasibility of extracting spatial data from broadcast video.</li>
+                    <li>Detection and team classification are strong given the visual noise and occlusion in NBA footage.</li>
+                  <li>Custom re-identification materially improves tracking stability in the face of missing detections.</li>
+                </ul>
+                </div>
+                <div class="nv-card">
+                  <div class="nv-card-title">Limitations</div>
+                  <ul class="bullet-list">
+                    <li><b>Court mapping consistency</b> varies heavily with camera angle/zoom and early-frame feature visibility.</li>
+                    <li><b>User input</b> is still required for team colours (automation opportunity).</li>
+                  <li><b>No ball tracking</b> yet, which limits higher-level play understanding.</li>
+                  <li><b>Ground truth scarcity</b> forces proxy metrics and manual evaluation in places.</li>
+                </ul>
+                </div>
+              </div>
+
+                <div class="nv-callout u-mt-14">
+                  <div class="nv-callout-title">If I continued this project</div>
+                <div class="body-text nv-muted">
+                Priorities would be: (1) improve mapping robustness and automate “good mapping” detection early in plays, (2) automatically infer team colours, (3) detect and track the ball,
+                and (4) scale to a season-level dataset with metadata for downstream analytics and play-type classification.
+              </div>
+            </div>
+            </div>
+          </div>
+
+            <div class="section">
+              <div class="section-header-row">
+                <div>
+                  <div class="section-kicker">Links</div>
+                <h2 class="section-title subheader-text">Jump In</h2>
+              </div>
+              </div>
+              <div class="link-grid">
+                <a class="link-tile" href="../assets/pdfs/nba-vision.pdf">
+                  <div class="link-tile-title">Full report (PDF)</div>
+                  <div class="body-text link-tile-desc">Motivation, methodology, system design, and evaluation.</div>
+                </a>
+                <a class="link-tile" href="#top">
+                  <div class="link-tile-title">Back to top</div>
+                  <div class="body-text link-tile-desc">Return to the top of the page.</div>
+                </a>
+              </div>
+            </div>
+      </div>
+    </div>
+
+      <div id="footer"></div>
+  </body>
+</html>

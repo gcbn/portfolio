@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en" id="top">
+  <head>
+    <meta charset="utf-8">
+
+    <link rel="icon" href="../assets/images/favicon.ico">
+    <title>Neg-GEM</title>
+    <meta name="description" content="A unified framework for continual learning × machine unlearning (NegGEM), with memorisation-aware buffers and membership inference evaluation.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light'
+      } catch (_) {
+        document.documentElement.dataset.theme = 'light'
+      }
+    </script>
+
+    <link rel="stylesheet" href="../css/site.css">
+    <link rel="stylesheet" href="../css/projects.css">
+
+    <script defer src="../js/script.js"></script>
+  </head>
+  <body class="project-theme-glass project-page-neg-gem" data-root="../">
+    <div id="navbar"></div>
+
+    <div id="main-content">
+      <div class="project-shell">
+        <div class="project-hero">
+          <div class="hero-top">
+            <div class="main-title">Neg-GEM</div>
+            <div class="body-text hero-subtitle">
+              Introducing a unified framework for <b>continual learning</b> × <b>machine unlearning</b>.
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <a class="button" href="../assets/pdfs/neg-gem.pdf">
+              <span class="button-text">Report (PDF)</span>
+              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+            <a class="button" href="https://github.com/DROP-TABLE-CS407/Machine-Unlearning-x-Continual-Learning">
+              <span class="button-text">GitHub Repo</span>
+              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+          </div>
+        </div>
+
+        <div class="section" id="overview">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Overview</div>
+              <h2 class="section-title subheader-text">A CL × MU System</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">Contents</div>
+              <div class="body-text ng-muted ng-contents">
+                Jump to:
+                <a href="#motivation">Motivation</a> ·
+                <a href="#methods">Methods</a> ·
+                <a href="#evaluation">Evaluation</a> ·
+                <a href="#results">Results</a> ·
+                <a href="#contribution">My role</a>
+              </div>
+            </div>
+
+            <div class="highlights-grid">
+              <div class="highlight">
+                <div class="highlight-title">Problem</div>
+                <div class="body-text">
+                  Real models learn from evolving data streams, and can face deletion requests mid-training. Retraining from scratch is expensive or infeasible, especially when old data is unavailable.
+                </div>
+              </div>
+              <div class="highlight">
+                <div class="highlight-title">What we built</div>
+                <div class="body-text">
+                  A unified CL×MU pipeline built around constrained gradient projection: learn new tasks without forgetting, and unlearn selected tasks while protecting retained tasks.
+                </div>
+              </div>
+              <div class="highlight">
+                <div class="highlight-title">What I owned</div>
+                <div class="body-text">
+                  Membership inference evaluation (MIA), a practical memorisation proxy, and memorisation-aware dual buffers. I led the unlearning research and informed NegGEM design discussions.
+                </div>
+              </div>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">Key Ideas</div>
+              <div class="body-text ng-muted">
+                This project investigates the interplay between Continual Learning (CL) and Machine Unlearning (MU), and introduces
+                <b>NegGEM</b>: a unified CL×MU framework that leverages the same retention machinery used in continual learning to strengthen unlearning.
+              </div>
+              &nbsp;
+              <div class="body-text ng-muted">
+                NegGEM adapts Gradient Episodic Memory (GEM): to unlearn a target task, it starts from a “forget direction” and then projects the update so retained tasks are protected by the same first-order constraints used in continual learning.
+              </div>
+            </div>
+
+            <details class="details u-mt-14">
+              <summary>Abstract</summary>
+              <div class="body-text ng-muted u-mt-10">
+                In the modern era of data privacy and evolving machine learning applications, the
+                ability to selectively forget previously learned information has become just as
+                important as learning new knowledge. In this report, we investigate the interplay
+                between continual learning and machine unlearning, two areas traditionally
+                treated as separate. We introduce NegGEM, a novel framework that demonstrates
+                how information retained during learning can be effectively leveraged to enhance
+                unlearning. Our work develops multiple variations of this unified approach,
+                including Unlearning-AGEM, Random Labelling GEM/AGEM, GEM+, and
+                ALT-NegGEM, exploring trade-offs between stability, plasticity, forgetting quality,
+                and computational efficiency. Extensive evaluations, including Membership
+                Inference Attack (MIA) testing, confirm that integrating learning and unlearning
+                objectives can improve unlearning success while preserving model utility. Our
+                findings suggest a promising direction for building more adaptable and
+                privacy-preserving machine learning systems.
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="section" id="motivation">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Motivation</div>
+              <h2 class="section-title subheader-text">Why CL x MU Needs a Unified Pipeline</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">Project motivation</div>
+              <div class="body-text ng-muted">
+                Training embeds training data within parameters and abstracts away individual data points. It is not feasible to retrain models every time their training dataset changes.
+                Two practical cases are continual learning and machine unlearning.
+              </div>
+              <ul class="bullet-list">
+                <li><b>Continual learning:</b> extend a trained model with new data without catastrophic forgetting (becoming worse on data points learned in earlier trainings).</li>
+                <li><b>Machine unlearning:</b> remove the effect of a subset of training data (a “forget set”) without hindering the model's performance on the retain set.</li>
+                <li><b>Constraint:</b> full access to the original dataset may not be available later</li>
+              </ul>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">Why privacy is central to unlearning scenarios</div>
+              <div class="body-text ng-muted">
+                Under GDPR, data subjects have a “right to be forgotten”. Unlearning should completely remove influence of the forget set on the model.
+                Naive unlearning methods can open models up to membership inference attacks (MIAs), which evaluate whether a model has successfully forgotten specific training data by attempting to determine if a given sample was previously part of the model’s training set.
+              </div>
+            </div>
+
+            <div class="ng-card u-mt-14">
+              <div class="ng-card-title">Problem statements</div>
+              <div class="body-text ng-muted">
+                <b>Learning and unlearning interactions:</b> assess whether continual learning affects unlearning, whether unlearning affects future learning, and whether both can be performed concurrently
+                <br><br>
+                <b>A unified learning–unlearning algorithm:</b> a joint update rule benchmarked on performance, unlearning success (including MIAs), and computational efficiency
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="methods">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Methods</div>
+              <h2 class="section-title subheader-text">From GEM/AGEM to NegGEM (and a Dual-Buffer System)</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">How to read this section</div>
+              <div class="body-text ng-muted">
+                This section mirrors the report structure: Continual Learning foundations (Ch. 4), Machine Unlearning foundations (Ch. 5), then the unified CL×MU system (Ch. 6).
+                The narrative is kept in-line, and the heavier maths/derivations are placed in dropdowns.
+              </div>
+            </div>
+
+
+
+            <div class="ng-card">
+              <div class="ng-card-title">Notation (used throughout)</div>
+              <div class="body-text ng-muted">
+                We write the model as <code>fθ</code>. A task stream introduces tasks in order <code>t = 0..T−1</code>.
+                For each task <code>k</code>, an episodic memory buffer <code>Mk</code> stores a small set of exemplars used to approximate task-level constraints.
+                Gradients are with respect to parameters <code>θ</code>.
+              </div>
+              <div class="ng-eqn u-mt-12">
+                g = ∇θ ℓ(fθ(x, t), y)
+                <br>
+                gk = ∇θ ℓ(fθ, Mk)
+                <br>
+                gref = ∇θ ℓ(fθ, Mbatch)
+              </div>
+              <div class="body-text ng-muted u-mt-12">
+                Under the locally linear approximation used by GEM-style methods, constraints on “not increasing loss” can be written as inner-product constraints between gradients.
+              </div>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">4.6 GEM: Gradient Episodic Memory</div>
+              <div class="body-text ng-muted">
+                GEM is an optimisation-based continual learning method. It learns a new task while imposing constraints that prevent the model from increasing the loss
+                on previously learned tasks (approximated via their memory buffers).
+              </div>
+              <div class="body-text ng-muted u-mt-12">
+                The important design choice is that the replay memories are not treated as additional supervised training data (which risks overfitting to the buffer);
+                instead, they define a feasible region of updates.
+              </div>
+              <details class="details u-mt-14">
+                <summary>GEM constraints (report Eq. 4.4 → 4.5)</summary>
+                <div class="ng-eqn u-mt-12">
+                  minimiseθ  ℓ(fθ(x, t), y)
+                  <br>
+                  s.t.  ℓ(fθ, Mk) ≤ ℓ(ft−1θ, Mk)  for all k &lt; t
+                  <br><br>
+                  (local linearisation)  ⟨g, gk⟩ ≥ 0  for all k &lt; t
+                </div>
+              </details>
+              <details class="details u-mt-14">
+                <summary>Memory budget allocation</summary>
+                <div class="body-text ng-muted u-mt-10">
+                  GEM assumes a fixed episodic memory budget <code>M</code>. When the total number of tasks <code>T</code> is known in advance, a simple policy allocates a fixed per-task quota.
+                  In our experiments, <code>T</code> is predetermined, so this allocation is constant across the stream.
+                </div>
+                <div class="ng-eqn u-mt-12">
+                  m = M / T  exemplars per task
+                </div>
+              </details>
+              <details class="details u-mt-14">
+                <summary>GEM projection (report Eq. 4.6–4.7)</summary>
+                <div class="ng-eqn u-mt-12">
+                  g̃ = argmin<sub>g̃</sub> ½‖g − g̃‖²  s.t.  ⟨g̃, gk⟩ ≥ 0  for all k &lt; t
+                  <br><br>
+                  Dual form: minimisev  ½ vᵀ G Gᵀ v + gᵀ Gᵀ v  s.t. v ≥ 0
+                  <br>
+                  where G = (g1, …, g<sub>t−1</sub>)
+                </div>
+              </details>
+              <details class="details u-mt-14">
+                <summary>Weaknesses (from the report)</summary>
+                <ul class="bullet-list u-mt-10">
+                  <li><b>QP overhead:</b> the projection step introduces CPU-bound compute that grows with the number of tasks/constraints.</li>
+                  <li><b>Buffer dependence:</b> replay buffers help stability, but they can become privacy hotspots and complicate GDPR-style constraints.</li>
+                  <li><b>Restricted updates:</b> aggressive projection can make learning new tasks harder when constraints conflict.</li>
+                </ul>
+              </details>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">4.7 AGEM: Average-Gradient Episodic Memory</div>
+              <div class="body-text ng-muted">
+                AGEM was introduced as a computationally cheaper alternative to GEM. It keeps the same goal (“avoid harming past experience”), but replaces GEM’s many constraints
+                with a single averaged constraint computed from a random memory batch.
+              </div>
+              <details class="details u-mt-14">
+                <summary>AGEM projection (report Eq. 4.8–4.9)</summary>
+                <div class="ng-eqn u-mt-12">
+                  g̃ = argmin<sub>g̃</sub> ½‖g − g̃‖²  s.t.  ⟨g̃, gref⟩ ≥ 0
+                  <br><br>
+                  if ⟨g, gref⟩ &lt; 0 then  g̃ = g − (gᵀgref / grefᵀgref) gref
+                </div>
+              </details>
+              <div class="body-text ng-muted u-mt-12">
+                This approximation changes the constraint geometry: GEM protects each past task individually, while AGEM protects a single “average past” direction.
+                In the report, both GEM-based and AGEM-based unlearning variants are compared to understand the efficiency–fidelity trade-off.
+              </div>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">5.3 Baseline unlearning objectives</div>
+              <div class="body-text ng-muted">
+                Unlearning removes the influence of a forget set <code>S</code> while preserving utility on a retain set <code>R</code>.
+                Since perfect retraining without <code>S</code> is often infeasible, many methods operate by fine-tuning the model with objectives designed to drive forget-set performance to chance.
+              </div>
+              <ul class="bullet-list">
+                <li><b>Fine-tune:</b> retrain on <code>R</code> (often with a higher learning rate) to exploit catastrophic forgetting on <code>S</code>.</li>
+                <li><b>Random labelling:</b> replace labels on <code>S</code> with random labels to break the original associations.</li>
+                <li><b>NegGrad:</b> apply gradient ascent on <code>S</code> to explicitly increase loss on forget samples.</li>
+              </ul>
+              <details class="details u-mt-14">
+                <summary>NegGrad+ (report Eq. 5.1)</summary>
+                <div class="body-text ng-muted u-mt-10">
+                  NegGrad+ combines retention and forgetting in a single objective: it performs descent on <code>R</code> and ascent on <code>S</code>, with <code>α</code> controlling the trade-off.
+                </div>
+                <div class="ng-eqn u-mt-12">
+                  L(w) = α · (1/|R|) Σ l(f(xi; w), yi)  −  (1 − α) · (1/|S|) Σ l(f(xj; w), yj)
+                </div>
+              </details>
+              <div class="body-text ng-muted u-mt-12">
+                In our work, NegGrad+ is also used as a strong unlearning baseline on CIFAR-100 and as a component inside GEM+ for separating integrated vs non-integrated behaviour.
+              </div>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">5.4 SalUn: Saliency Unlearning</div>
+              <div class="body-text ng-muted">
+                SalUn targets unlearning to the parameters most responsible for memorising the forget set. It builds a saliency mask from gradient magnitudes on <code>S</code> and then updates only those salient weights.
+              </div>
+              <details class="details u-mt-14">
+                <summary>Saliency mask (report Eq. 5.2)</summary>
+                <div class="ng-eqn u-mt-12">
+                  ms = ( |∇θ ℓf(θ; S)|<sub>θ=θ0</sub> ≥ γ )
+                </div>
+              </details>
+              <details class="details u-mt-14">
+                <summary>Algorithm: saliency-based gradient filtering (report Algorithm 7)</summary>
+                <div class="ng-eqn u-mt-12">
+                  Input: forget gradient gτ, threshold p
+                  <br>
+                  1) grad = Flatten(gτ)
+                  <br>
+                  2) cutoff = Quantile<sub>1−p</sub>(|grad|)
+                  <br>
+                  3) mask = (|grad| ≥ cutoff)
+                  <br>
+                  4) grad = grad × mask
+                  <br>
+                  Output: filtered gradient gsalτ (reshaped), mask
+                </div>
+              </details>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">6.1 NegGEM: Negative-GEM</div>
+              <div class="body-text ng-muted">
+                NegGEM is the key unification step. In continual learning, GEM prevents catastrophic forgetting by constraining updates to not harm past tasks.
+                NegGEM uses the same constraint logic to do the inverse operation: <i>force catastrophic forgetting</i> on a chosen task <code>τ</code> while preserving all other tasks.
+              </div>
+              <div class="body-text ng-muted u-mt-12">
+                The modification is to negate the forget-task gradient to define an unlearning direction, then project it to satisfy GEM constraints for all retained tasks.
+              </div>
+              <details class="details u-mt-14">
+                <summary>NegGEM projection</summary>
+                <div class="ng-eqn u-mt-12">
+                  gunlearn = −gτ
+                  <br>
+                  gnew = argmin<sub>g</sub> ½‖gunlearn − g‖²  s.t.  ⟨g, gk⟩ ≥ 0  for all k ∈ K
+                </div>
+                <div class="body-text ng-muted u-mt-10">
+                  Under GEM’s local linearity argument, the constraints imply the update will not increase retained-task losses to first order, while the base direction targets forgetting of <code>τ</code>.
+                </div>
+              </details>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">6.2–6.4 Variants, and the final system</div>
+              <div class="body-text ng-muted">
+                The report explores variants to measure trade-offs between retention, forgetting quality, computational cost, and privacy (MIA).
+                These variants are also used as ablations to test whether the “unified” objective truly helps versus combining methods naïvely.
+              </div>
+              <div class="u-mt-12 u-overflow-auto">
+                <table class="ng-table">
+                  <thead>
+                    <tr>
+                      <th>Variant</th>
+                      <th>Key change</th>
+                      <th>Why it exists</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Unlearning-AGEM</td>
+                      <td>Use AGEM-style single-constraint projection</td>
+                      <td>Reduce QP overhead while retaining MU guarantees</td>
+                    </tr>
+                    <tr>
+                      <td>Random labelling GEM/AGEM</td>
+                      <td>Randomise forget-set labels before constrained updates</td>
+                      <td>Drive uncertainty and improve resistance to MIAs</td>
+                    </tr>
+                    <tr>
+                      <td>GEM+</td>
+                      <td>GEM for CL + NegGrad+ for MU</td>
+                      <td>“No-synergy” control baseline</td>
+                    </tr>
+                    <tr>
+                      <td>ALT-NegGEM</td>
+                      <td>Safeguards against over-projection</td>
+                      <td>Stabilise behaviour as task count grows</td>
+                    </tr>
+                    <tr>
+                      <td>SalUn extension</td>
+                      <td>Saliency-mask forget gradients before projection</td>
+                      <td>Target updates to parameters most responsible for <code>S</code></td>
+                    </tr>
+                    <tr>
+                      <td>Dual buffers</td>
+                      <td>Memorisation-aware learn/unlearn buffers</td>
+                      <td>Improve both CL stability and MU effectiveness (see <a class="ng-contents-link" href="#buffers">Memory</a>)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <details class="details u-mt-14">
+              <summary>SalUn extension used with NegGEM</summary>
+              <div class="body-text ng-muted u-mt-10">
+                In our integrated pipeline, we apply SalUn to the forget-task gradient before the NegGEM projection step. This concentrates the constrained update on salient parameters and reduces unnecessary parameter drift.
+              </div>
+              <div class="ng-eqn u-mt-12">
+                gτ → gsalτ  (saliency filtering)
+                <br>
+                gunlearn = −gsalτ
+                <br>
+                gnew = NegGEM_Project(gunlearn, {gk | k ∈ K})
+              </div>
+            </details>
+            <details class="details u-mt-14">
+              <summary>Pseudocode: a unified CL×MU training loop</summary>
+              <div class="ng-eqn u-mt-12">
+                for event in stream:
+                <br>
+                &nbsp;&nbsp;if event == learn(task t):
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;g = ∇θ ℓt(θ; batch)
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;g = GEM_or_AGEM_Project(g, memories)
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;θ ← θ − η·g
+                <br>
+                &nbsp;&nbsp;if event == forget(task τ):
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;gτ = ∇θ ℓτ(θ; forget-buffer)
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;gτ = SalUn_Filter(gτ) &nbsp;&nbsp;# optional
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;g = NegGEM_Project(−gτ, retained-memories)
+                <br>
+                &nbsp;&nbsp;&nbsp;&nbsp;θ ← θ − η·g
+              </div>
+              <div class="body-text ng-muted u-mt-10">
+                In practice, the details are in how the memory buffers are constructed and sampled (see <a href="#buffers">Memory</a>) and how unlearning success is evaluated beyond accuracy (see <a href="#evaluation">Evaluation</a>).
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="section" id="buffers">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Memory</div>
+              <h2 class="section-title subheader-text">Memorisation-Aware Buffer Design</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">Buffer composition experiment</div>
+              <div class="body-text ng-muted">
+                To guide buffer design, we compared different replay strategies for continual learning: random replay, replay of most memorised samples, and replay of least memorised samples.
+                Low memorisation for a data point means the model's prediction is driven primarily by generalisable patterns shared with other training examples, so removing that point has little effect on the model's behaviour; high memorisation means the model has encoded instance-specific information about that point.
+                <br><br>
+                Our results found that least-memorised replay improved both final accuracy and average forgetting in the reported runs, which makes sense as the model is less likely to catestrophically forget data points which are more embedded in its instance.
+              </div>
+            </div>
+            <div class="ng-card">
+              <div class="ng-card-title">Dual buffer architecture</div>
+              <div class="body-text ng-muted">
+                The final system partitions episodic storage into two buffers per task (learn vs unlearn), populated using per-example memorisation scores
+                (precomputed for CIFAR-100 and loaded from a score file):
+              </div>
+              <ul class="bullet-list">
+                <li><b>Learn buffer:</b> under-memorised samples to stabilise CL and reduce catastrophic forgetting</li>
+                <li><b>Unlearn buffer:</b> highly memorised samples as primary targets for MU</li>
+                <li><b>Mixing:</b> fill part of each buffer from the score extreme, and the remainder uniformly at random for diversity</li>
+              </ul>
+            </div>
+
+            <details class="details u-mt-14">
+              <summary>Table: buffer composition vs final accuracy/forgetting (report Table 1)</summary>
+              <div class="u-mt-12 u-overflow-auto">
+                <table class="ng-table">
+                  <thead>
+                    <tr>
+                      <th>Buffer config</th>
+                      <th>Final acc (%)</th>
+                      <th>Avg forget (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Random</td>
+                      <td>65.15 ± 0.58</td>
+                      <td>5.42 ± 0.61</td>
+                    </tr>
+                    <tr>
+                      <td>Most memorised</td>
+                      <td>66.48 ± 1.39</td>
+                      <td>4.01 ± 0.92</td>
+                    </tr>
+                    <tr class="ng-row-strong">
+                      <td>Least memorised</td>
+                      <td>67.95 ± 1.80</td>
+                      <td>3.37 ± 0.41</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <details class="details u-mt-14">
+              <summary>Iteration note: memorisation proxies</summary>
+              <div class="body-text ng-muted u-mt-10">
+                Early memorisation experiments used an estimator that did not align with literature-recommended approaches; this was flagged in supervision and informed later improvements to the proxy used for buffer selection.
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="section" id="evaluation">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Evaluation</div>
+              <h2 class="section-title subheader-text">Metrics, Datasets, and Stress Tests</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">Experimental setup</div>
+              <ul class="bullet-list">
+                <li><b>Datasets:</b> CIFAR-10 for fast validation; CIFAR-100 for final experiments</li>
+                <li><b>Tasks:</b> CIFAR-100 split into 20 tasks of 5 classes each (task incremental)</li>
+                <li><b>Model:</b> ResNet-18 backbone with task-specific class masking</li>
+                <li><b>Baselines:</b> naive replay, GEM, AGEM re-implemented; unlearning extensions benchmarked</li>
+              </ul>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">What we measure</div>
+              <ul class="bullet-list">
+                <li><b>Accuracy:</b> retain/forget (train + test) across iterations</li>
+                <li><b>Confidence:</b> max softmax probability on retain/forget sets</li>
+                <li><b>CL-ToW:</b> continual-learning adaptation of Tug-of-War where a reference exists</li>
+                <li><b>CLU (CLUmix):</b> online scalar score combining retention loss and residual knowledge</li>
+                <li><b>MIA:</b> logistic regression membership inference using per-sample loss (AUC + attack accuracy)</li>
+              </ul>
+            </div>
+
+            <details class="details u-mt-14">
+              <summary>CL-ToW definition (report Ch. 7.1)</summary>
+              <div class="body-text ng-muted u-mt-10">
+                CL-ToW adapts the Tug-of-War (ToW) metric to a continual learning + unlearning stream by comparing the unlearned model to a matching reference snapshot.
+                This is most natural in sequences where the retain/forget split at an unlearning step existed earlier in the learning-only phase.
+              </div>
+              <div class="ng-eqn u-mt-12">
+                ToW(θ<sub>u</sub>, θ<sub>r</sub>, S, R, D<sub>test</sub>) =
+                (1 − da(θ<sub>u</sub>, θ<sub>r</sub>, S)) · (1 − da(θ<sub>u</sub>, θ<sub>r</sub>, R)) · (1 − da(θ<sub>u</sub>, θ<sub>r</sub>, D<sub>test</sub>))
+                <br>
+                da(θ<sub>u</sub>, θ<sub>r</sub>, D) = |a(θ<sub>u</sub>, D) − a(θ<sub>r</sub>, D)|
+                <br><br>
+                S<sub>t</sub> = {D<sub>i</sub> | 0 &lt; i &lt; t, G<sub>i</sub> &lt; 0}
+                <br>
+                R<sub>t</sub> = {D<sub>i</sub> | 0 ≤ i &lt; t, G<sub>i</sub> &gt; 0} &setminus; S<sub>t</sub>
+                <br><br>
+                CL-ToW(t) =
+                (1 − da(θ<sub>u</sub>(t), θ<sub>r</sub>(t), S<sub>t</sub>)) ·
+                (1 − da(θ<sub>u</sub>(t), θ<sub>r</sub>(t), R<sub>t</sub>)) ·
+                (1 − da(θ<sub>u</sub>(t), θ<sub>r</sub>(t), D<sub>test</sub>)),  if t &gt; t0
+                <br>
+                CL-ToW(t) = 1,  if t ≤ t0
+              </div>
+              <div class="body-text ng-muted u-mt-12">
+                Here <code>t0</code> denotes the final learning step before the first unlearning request, and <code>θr(t)</code> is the matching reference snapshot used for comparison at step <code>t</code>.
+                CL-ToW is only well-defined when a matching reference exists for the same retain/forget split (e.g., learn <code>{0..19}</code> then forget <code>{−19..−0}</code>).
+                In other sequences, we rely more heavily on CLU/CLUmix and direct retain/forget accuracy.
+              </div>
+            </details>
+
+            <details class="details u-mt-14">
+              <summary>CLU definition (report Ch. 7.1)</summary>
+              <div class="ng-eqn u-mt-12">
+                Lret(t) = (1/|Rt|) Σ<sub>j∈Rt</sub> max(0, aanchor<sub>j</sub> − aj(t))
+                <br>
+                Lres(t) = (1/|St|) Σ<sub>j∈St</sub> max(0, aj(t) − arand<sub>j</sub>)
+                <br>
+                CLU(t) = (1 − Lret(t)) (1 − Lres(t))  ∈ [0, 1]
+              </div>
+              <div class="body-text ng-muted u-mt-12">
+                Anchor accuracies are recorded when a task is first learned; chance accuracy is 0.2 for the 5-way tasks used in the main experiments.
+              </div>
+            </details>
+
+            <details class="details u-mt-14">
+              <summary>MIA definition (implementation)</summary>
+              <div class="body-text ng-muted u-mt-10">
+                I implemented the project’s loss-based membership inference attack (SCRUB-inspired). For each task, we train a simple binary classifier to distinguish
+                <i>member</i> samples (seen by the model during training) from <i>non-member</i> samples (held-out test data), using the model’s per-sample cross-entropy loss as the only feature.
+              </div>
+              <ul class="bullet-list u-mt-10">
+                <li><b>Attack model:</b> logistic regression on a 1D feature (loss)</li>
+                <li><b>Inputs:</b> per task, member set (either full task train set or the replay-buffer subset) vs non-member set (task test set)</li>
+                <li><b>Balanced sampling:</b> sample equal counts from each set; split into train/eval halves</li>
+                <li><b>Stabilisation:</b> clip losses to ±400 before fitting</li>
+                <li><b>Outputs:</b> ROC-AUC and attack accuracy; 5-fold CV accuracy reported on the training split</li>
+              </ul>
+            </details>
+
+            <div class="ng-card u-mt-14">
+              <div class="ng-card-title">Task-sequence suite A–H (report Ch. 7.4.4)</div>
+              <div class="body-text ng-muted">
+                Eight sequences systematically vary the size, position, and timing of forget requests to cover volatility, mid-stream deletion, re-insertion, and temporal effects.
+              </div>
+              <details class="details u-mt-10">
+                <summary>Show sequences A–H</summary>
+                <div class="body-text ng-muted u-mt-10">
+                  Sequences are written as a list of task IDs; positive values denote learn steps and negative values denote unlearning that task.
+                </div>
+                <div class="ng-eqn u-mt-12">
+                  A: {0..19, −19..−1}
+                  <br>
+                  B: {0, 1, −1, 1, 2, −2, 2, …, 19}
+                  <br>
+                  C: {0..14, −14, −14, −13, −12, −11, −10, 15..19}
+                  <br>
+                  D: {0..9, −9, −8, −7, −6, −5, 10..19}
+                  <br>
+                  E: {0..19, −RandomTask}
+                  <br>
+                  F: {0..9, −9..−5, 10..19, 5..9}
+                  <br>
+                  G: {0..9, −9..−5, 10..14, 5..9, 15..19}
+                  <br>
+                  H: {0..19, −0, −4, −9, −14}
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="results">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Results</div>
+              <h2 class="section-title subheader-text">Key Results and Takeaways</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">Headline takeaways</div>
+              <ul class="bullet-list">
+                <li>Under long-horizon unlearning (sequence A), constraint-based methods drive forget-set accuracy towards chance while preserving retain utility; NegGEM reports CL-ToW above 0.85 for most of the unlearning process under the chosen setup.</li>
+                <li>Under volatile learn–forget cycles (sequence B), random-labelling variants can be more stable in retention because their gradients are less likely to violate constraints than negated gradients.</li>
+                <li>Mid-stream unlearning (sequences C/D) does not substantially block subsequent learning; differences are generally within standard deviations, with small systematic degradations noted.</li>
+                <li>Tasks can be unlearned and later relearned (sequences F/G); GEM-based variants show strong reversibility.</li>
+                <li>MIA analysis shows continual learning reduces membership leakage on the full training set over time, while replay-buffer samples become more vulnerable due to repeated replay.</li>
+              </ul>
+            </div>
+
+            <figure class="ng-figure u-mt-14">
+              <img class="ng-figure-img" src="../assets/neggem/mialearning.png" alt="Membership inference AUC during learning phase showing training-set AUC decreasing while replay-buffer AUC increases." loading="lazy" decoding="async">
+              <figcaption class="body-text ng-muted">
+                <div class="ng-figure-title">MIA AUC during continual learning (report Figs. 39–40)</div>
+                Train-set membership leakage declines towards chance, while the replay buffer becomes progressively more vulnerable due to repeated exposure.
+              </figcaption>
+            </figure>
+
+            <figure class="ng-figure u-mt-14">
+              <img class="ng-figure-img" src="../assets/neggem/barsF4.png" alt="Bar chart comparing initial accuracy, post-unlearning accuracy, and re-learn accuracy for tasks 5–9 across algorithms." loading="lazy" decoding="async">
+              <figcaption class="body-text ng-muted">
+                <div class="ng-figure-title">Relearning after deletion (sequence F)</div>
+                After unlearning tasks 5–9, GEM-family methods push forgotten-task accuracy towards chance and later recover close to the original accuracy when the tasks are reintroduced.
+              </figcaption>
+            </figure>
+
+            <figure class="ng-figure u-mt-14">
+              <img class="ng-figure-img" src="../assets/neggem/tow_scores_a4.png" alt="CL-ToW score over unlearning iterations for sequence A." loading="lazy" decoding="async">
+              <figcaption class="body-text ng-muted">
+                <div class="ng-figure-title">CL-ToW over unlearning (sequence A) (report Fig. 12)</div>
+                The CL-ToW score stays high (>0.85) for most of the unlearning trajectory for neggem, indicating the unlearned model remains close to the reference snapshot on retain and test while diverging on the forget set.
+              </figcaption>
+            </figure>
+
+            <figure class="ng-figure u-mt-14">
+              <img class="ng-figure-img" src="../assets/neggem/miaAGEM.png" alt="Line plot of membership inference AUC across learning iterations for each algorithm, showing train-set AUC decreasing while replay-buffer AUC increases over time." loading="lazy" decoding="async">
+              <figcaption class="body-text ng-muted">
+                <div class="ng-figure-title">MIA AUC during continual learning (all algorithms) (report Fig. 41)</div>
+                Across algorithms, train-set AUC trends down towards chance while buffer AUC trends up; AGEM variants show the largest buffer leakage, matching the Table 3 gap.
+              </figcaption>
+            </figure>
+
+            <details class="details u-mt-14">
+              <summary>Accuracy snapshot: before vs after unlearning</summary>
+              <div class="body-text ng-muted u-mt-10">
+                These plots summarise the unlearning trade-off: retained-task accuracy should stay high after unlearning, while forgotten-task accuracy should drop towards chance.
+              </div>
+              <figure class="ng-figure u-mt-12">
+                <img class="ng-figure-img" src="../assets/neggem/e42.png" alt="Bar chart comparing retained-task accuracy before and after unlearning across algorithms." loading="lazy" decoding="async">
+                <figcaption class="body-text ng-muted">
+                  <div class="ng-figure-title">Retained-task accuracy before vs after unlearning</div>
+                  Retain performance is largely preserved across methods; in this snapshot, NegGrad+ shows the largest drop after unlearning.
+                </figcaption>
+              </figure>
+              <figure class="ng-figure u-mt-14">
+                <img class="ng-figure-img" src="../assets/neggem/e41.png" alt="Bar chart comparing forgotten-task accuracy before and after unlearning across algorithms." loading="lazy" decoding="async">
+                <figcaption class="body-text ng-muted">
+                  <div class="ng-figure-title">Forgotten-task accuracy before vs after unlearning</div>
+                  Most methods drop towards chance after unlearning; RL-AGEM remains noticeably higher in this test.
+                </figcaption>
+              </figure>
+            </details>
+
+            <details class="details u-mt-14">
+              <summary>Table: final MIA AUC + retain/forget accuracy (report Table 3)</summary>
+              <div class="body-text ng-muted u-mt-10">
+                MIA AUC values are mean ± std. Retain/forget accuracies are mean percentages.
+              </div>
+              <div class="u-mt-12 u-overflow-auto">
+                <table class="ng-table">
+                  <thead>
+                    <tr>
+                      <th>Method</th>
+                      <th>Train AUC</th>
+                      <th>Buffer AUC</th>
+                      <th>Retain acc</th>
+                      <th>Forget acc</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="ng-row-strong">
+                      <td>NegGEM</td>
+                      <td>0.499 ± 0.022</td>
+                      <td>0.533 ± 0.040</td>
+                      <td>61.5</td>
+                      <td>24.2</td>
+                    </tr>
+                    <tr>
+                      <td>ALT-NegGEM</td>
+                      <td>0.488 ± 0.026</td>
+                      <td>0.532 ± 0.041</td>
+                      <td>62.6</td>
+                      <td>24.9</td>
+                    </tr>
+                    <tr>
+                      <td>RL-GEM</td>
+                      <td>0.489 ± 0.025</td>
+                      <td>0.522 ± 0.052</td>
+                      <td>59.2</td>
+                      <td>22.5</td>
+                    </tr>
+                    <tr>
+                      <td>NegGrad+</td>
+                      <td>0.511 ± 0.026</td>
+                      <td>0.570 ± 0.036</td>
+                      <td>57.5</td>
+                      <td>22.5</td>
+                    </tr>
+                    <tr>
+                      <td>NegAGEM</td>
+                      <td>0.506 ± 0.040</td>
+                      <td>0.766 ± 0.053</td>
+                      <td>56.8</td>
+                      <td>25.3</td>
+                    </tr>
+                    <tr>
+                      <td>RL-AGEM</td>
+                      <td>0.523 ± 0.016</td>
+                      <td>0.825 ± 0.037</td>
+                      <td>56.8</td>
+                      <td>23.0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <details class="details u-mt-14">
+              <summary>Notes on interpretation</summary>
+              <ul class="bullet-list u-mt-10">
+                <li><b>Chance level:</b> main experiments use 5-way tasks, so chance accuracy is 0.2; “forget accuracy ≈ chance” is the targeted outcome.</li>
+                <li><b>Why AUC?</b> MIA AUC is threshold-independent and makes it easier to compare privacy leakage across methods.</li>
+                <li><b>Train vs buffer leakage:</b> replay buffers are repeatedly reused; the report observes that privacy risk concentrates in the buffer subset over time.</li>
+                <li><b>AGEM variants:</b> buffer AUC separates methods much more strongly than train AUC in Table 3; this is one of the clearest privacy signals in the study.</li>
+              </ul>
+            </details>
+
+            <details class="details u-mt-14">
+              <summary>Additional plots</summary>
+              <figure class="ng-figure u-mt-12">
+                <img class="ng-figure-img" src="../assets/neggem/CLUB4.png" alt="CLUmix metric over iterations for task sequence B across algorithms." loading="lazy" decoding="async">
+                <figcaption class="body-text ng-muted">
+                  <div class="ng-figure-title">Sequence B: CLUmix under volatile learn→unlearn cycles (report Fig. 17)</div>
+                  Rapid deletions create sharp oscillations; random-labelling variants tend to keep a higher CLUmix envelope in this stress test.
+                </figcaption>
+              </figure>
+
+              <figure class="ng-figure u-mt-14">
+                <img class="ng-figure-img" src="../assets/neggem/CLUC4.png" alt="CLUmix metric over iterations for task sequence C across algorithms." loading="lazy" decoding="async">
+                <figcaption class="body-text ng-muted">
+                  <div class="ng-figure-title">Sequence C: CLUmix around mid-stream deletions</div>
+                  Mid-training unlearning causes a noticeable CLUmix drop at the deletion point, then partial recovery as later tasks are learned.
+                </figcaption>
+              </figure>
+            </details>
+
+            <details class="details u-mt-14" id="reproducibility">
+              <summary>Reproducibility</summary>
+              <div class="body-text ng-muted u-mt-10">
+                Experiments were run on the University of Warwick DCS scientific computing cluster; the repo and report include full configuration details and entry points.
+              </div>
+              <ul class="bullet-list u-mt-10">
+                <li><b>Repo:</b> <a href="https://github.com/DROP-TABLE-CS407/Machine-Unlearning-x-Continual-Learning">Machine-Unlearning-x-Continual-Learning</a></li>
+                <li><b>Primary entry point:</b> <code>./negGemGradSalun.py</code></li>
+                <li><b>Args:</b> <code>negGem/args.py</code></li>
+                <li><b>Outputs:</b> plots/CSVs saved under a <code>Results</code> directory prefix</li>
+              </ul>
+            </details>
+          </div>
+        </div>
+
+        <div class="section" id="limitations">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Limitations</div>
+              <h2 class="section-title subheader-text">Limitations and Future Work</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">What I learned</div>
+              <ul class="bullet-list">
+                <li>Constraint-based projection provides a clean “interface” between learning and unlearning, but compute and approximation choices (GEM vs AGEM) matter.</li>
+                <li>Data selection (memorisation-aware buffers) affects retention, forgetting quality, and privacy risk as much as the chosen method.</li>
+                <li>Replay buffers stabilise continual learning but can become the primary privacy hotspot under MIA.</li>
+              </ul>
+            </div>
+            <div class="ng-card">
+              <div class="ng-card-title">Limitations</div>
+              <ul class="bullet-list">
+                <li>Compute constraints limited CL-ToW evaluation to certain task sequences; broader coverage would deepen comparisons to perfectly retrained references.</li>
+                <li>SCRUB was implemented during early experimentation but was not fully integrated into the CL × MU pipeline due to time constraints.</li>
+              </ul>
+            </div>
+            <div class="ng-card">
+              <div class="ng-card-title">Future Works</div>
+              <ul class="bullet-list">
+                <li>Future work includes exploring alternative continual learning families (regularisation-based methods, expanding architectures) and assessing generality of NegGEM-style unlearning.</li>
+                <li>Explore dynamic selection of unlearning strategies based on training history and online metrics.</li>
+                <li>Investigate generative replay to reduce replay-buffer privacy leakage while maintaining utility.</li>
+                <li>Scale to larger datasets (e.g., ImageNet) and more heterogeneous continual learning scenarios.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="contribution">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Role</div>
+              <h2 class="section-title subheader-text">My Contributions (Within a Team Project)</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="ng-card">
+              <div class="ng-card-title">What I owned</div>
+              <div class="body-text ng-muted">
+                I owned the machine unlearning research track and its implementations, including the membership inference evaluation and the memorisation-aware memory-buffer system.
+              </div>
+              <ul class="bullet-list">
+                <li><b>MIA framework (implementation):</b> per-task logistic-regression attacks using per-sample loss; attack accuracy + AUC; train-set vs buffer analysis</li>
+                <li><b>Memorisation proxy + dual buffers:</b> Feldman/RUM-inspired ranking used to build learn/unlearn buffers; buffer composition experiments</li>
+                <li><b>Unlearning methods:</b> baselines (Fine-tune/NegGrad+), SalUn integration, and CLxMU combined testing</li>
+                <li><b>Research contribution:</b> led unlearning research and informed NegGEM discussions and design decisions throughout the project</li>
+              </ul>
+            </div>
+
+            <div class="ng-card">
+              <div class="ng-card-title">How we worked</div>
+              <div class="body-text ng-muted">
+                Work split across CL-heavy and MU-heavy tracks, with regular consolidation to keep implementations comparable and the evaluation protocol consistent.
+              </div>
+              <ul class="bullet-list">
+                <li>Regular syncs to align experimental protocols and baselines</li>
+                <li>Shared code ownership with consistent interfaces for algorithms, buffers, and metrics</li>
+                <li>Joint review of plots/tables to ensure claims matched the evidence</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Links</div>
+              <h2 class="section-title subheader-text">Jump In</h2>
+            </div>
+          </div>
+          <div class="link-grid">
+            <a class="link-tile" href="https://github.com/DROP-TABLE-CS407/Machine-Unlearning-x-Continual-Learning">
+              <div class="link-tile-title">Repository</div>
+              <div class="body-text link-tile-desc">Code, experiments, and evaluation tooling (CL × MU).</div>
+            </a>
+            <a class="link-tile" href="../assets/pdfs/neg-gem.pdf">
+              <div class="link-tile-title">Full report (PDF)</div>
+              <div class="body-text link-tile-desc">All algorithms, derivations, results, and appendices.</div>
+            </a>
+            <a class="link-tile" href="#top">
+              <div class="link-tile-title">Back to top</div>
+              <div class="body-text link-tile-desc">Return to the top of the page.</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="footer"></div>
+  </body>
+</html>

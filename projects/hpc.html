@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" id="top">
+  <head>
+    <meta charset="utf-8">
+
+    <link rel="icon" href="../assets/images/favicon.ico">
+    <title>HPC Coursework</title>
+    <meta name="description" content="Parallelised a 2D CFD solver using MPI domain decomposition and a hybrid MPI + OpenMP approach.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light'
+      } catch (_) {
+        document.documentElement.dataset.theme = 'light'
+      }
+    </script>
+
+    <link rel="stylesheet" href="../css/site.css">
+    <link rel="stylesheet" href="../css/projects.css">
+
+    <script defer src="../js/script.js"></script>
+  </head>
+  <body class="project-theme-glass" data-root="../">
+    <div id="navbar"></div>
+
+    <div id="main-content">
+      <div class="project-shell">
+        <div class="project-hero">
+          <div class="hero-top">
+            <div class="main-title">HPC Coursework</div>
+            <div class="body-text hero-subtitle">
+              Parallelised a 2D CFD solver using <b>MPI domain decomposition</b> and a <b>hybrid MPI + OpenMP</b> approach.
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <a class="button" href="../assets/pdfs/hpc.pdf">
+              <span class="button-text">Report (PDF)</span>
+              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+            <a class="button" href="#results">
+              <span class="button-text">Results</span>
+              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Introduction</div>
+              <h2 class="section-title subheader-text">Parallelising a Time-Stepping CFD Simulation</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="hpc-grid-2">
+              <div class="hpc-card">
+                <div class="hpc-card-title">Problem domain</div>
+                <div class="body-text hpc-muted">
+                  The provided "Karman" code simulates two-dimensional fluid dynamics on a discretised grid. Each timestep evolves velocity fields (<code>u</code>, <code>v</code>)
+                  and pressure (<code>p</code>) by iteratively solving the underlying equations until convergence within that step.
+                </div>
+                <ul class="bullet-list">
+                  <li>Stable timestep (<code>Δt</code>) from CFL and global max velocities</li>
+                  <li>Tentative velocities (<code>F</code>, <code>G</code>)</li>
+                  <li>RHS construction for pressure solve</li>
+                  <li>Pressure Poisson solved via Red/Black SOR</li>
+                  <li>Velocity update + boundary conditions</li>
+                </ul>
+              </div>
+              <div class="hpc-card">
+                <div class="hpc-card-title">Why spatial parallelism</div>
+                <div class="body-text hpc-muted">
+                  Each timestep depends on the previous one, so parallelising over time isn’t feasible. The natural parallelism is <b>spatial</b>: the grid can be split into mostly
+                  independent subdomains, with limited communication at boundaries.
+                </div>
+                  <ul class="bullet-list">
+                    <li>Stencil-like kernels: cells use local neighbours</li>
+                    <li>Communication limited to halo/ghost exchange on subdomain edges</li>
+                    <li>Most loops are regular and map cleanly to per-cell parallelism</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="hpc-card u-mt-14">
+                <div class="hpc-card-title">The bottleneck: pressure Poisson (Red/Black SOR)</div>
+              <div class="body-text hpc-muted">
+                The pressure solve enforces incompressibility by solving a Poisson equation every timestep. In this coursework it’s implemented with a Red/Black SOR iteration,
+                and profiling showed it dominates runtime (≈95%). That makes it the main limiter of both MPI scaling (ghost exchange + reductions) and OpenMP scaling (memory bandwidth + synchronisation).
+              </div>
+                <div class="hpc-eqn u-mt-10" aria-label="Pressure Poisson equation (conceptual)">
+                  ∇²p = RHS(u*, v*)  (solved iteratively with Red/Black SOR)
+                </div>
+                <div class="body-text hpc-muted u-mt-10">
+                  In the distributed version, each iteration needs up-to-date boundary values (ghost exchange) and consistent convergence checks (global reductions), so communication sits directly on the critical path.
+                </div>
+              </div>
+
+                <div class="hpc-callout u-mt-14">
+                  <div class="hpc-callout-title">Goal</div>
+                <div class="body-text hpc-muted">
+                  Use <b>MPI</b> to distribute computation across nodes, then introduce <b>OpenMP</b> within each node to increase utilisation while preserving correctness.
+                  Outputs were verified against a serial baseline for each problem size.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">MPI Strategy</div>
+              <h2 class="section-title subheader-text">1D Decomposition (Along <code>i</code>)</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="body-text hpc-muted">
+              The grid is <code>imax × jmax</code>, and for the benchmark configuration <code>imax ≈ 5 × jmax</code>. A 1D horizontal split along the <code>i</code> axis minimises communication:
+              each rank exchanges only left/right ghost columns. A 2D split would also exchange rows, nearly doubling boundary traffic.
+            </div>
+
+              <figure class="hpc-figure u-mt-12">
+                <img class="hpc-figure-img" src="../assets/hpc/1d.png" alt="1D domain decomposition across three MPI processes with ghost columns exchanged between neighbours.">
+                <figcaption class="body-text hpc-muted">
+                1D decomposition with ghost columns: each rank owns a stripe of columns and exchanges boundary data with neighbours.
+              </figcaption>
+            </figure>
+
+              <div class="hpc-grid-2 u-mt-14">
+                <div class="hpc-card">
+                <div class="hpc-card-title">Load balancing</div>
+                <div class="body-text hpc-muted">
+                  When <code>imax</code> isn’t divisible by the number of ranks <code>n</code>, the remainder columns are distributed across the first ranks so no single rank becomes a straggler.
+                </div>
+                <ul class="bullet-list">
+                  <li>Base: <code>floor(imax / n)</code> columns per rank</li>
+                  <li>Remainder: first <code>r = imax mod n</code> ranks get +1 column</li>
+                  <li>Each local grid includes ghost columns (left/right)</li>
+                </ul>
+              </div>
+              <div class="hpc-card">
+                <div class="hpc-card-title">What communication is required</div>
+                <div class="body-text hpc-muted">
+                  Communication is limited to what correctness demands: ghost exchange for stencils, and collectives for global values used by stability and convergence checks.
+                </div>
+                <ul class="bullet-list">
+                  <li>Ghost exchange after boundary-sensitive kernels</li>
+                  <li><code>MPI_Allreduce</code> for global maxima (<code>Δt</code>) and Poisson norms/residuals</li>
+                  <li>Gather final subdomains to rank 0 for output</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">MPI Implementation</div>
+              <h2 class="section-title subheader-text">Keeping a Distributed Solver Correct</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="hpc-grid-2">
+              <div class="hpc-card">
+                <div class="hpc-card-title">Global arrays → local subdomains</div>
+                <div class="body-text hpc-muted">
+                  Rank 0 initialises global arrays (<code>u</code>, <code>v</code>, <code>p</code>, cell flags), then partitions and distributes subdomains to other ranks.
+                  Each subdomain includes ghost columns so stencil computations remain valid at local boundaries.
+                </div>
+                <ul class="bullet-list">
+                  <li>Rank 0 computes each rank’s start index and width</li>
+                  <li>Sends contiguous buffers including ghost columns</li>
+                  <li>At the end, rank 0 receives interior columns and reconstructs global arrays</li>
+                </ul>
+              </div>
+              <div class="hpc-card">
+                <div class="hpc-card-title">Boundary conditions + ghost exchange</div>
+                <div class="body-text hpc-muted">
+                  Numerical correctness depends on consistent boundary data. Only the first and last ranks apply global left/right boundary conditions;
+                  other ranks treat their subdomain edges as interior and rely on ghost exchange.
+                  </div>
+                  <ul class="bullet-list">
+                    <li>Ghost exchange for <code>F</code>/<code>G</code> after tentative velocity computation</li>
+                    <li><code>MPI_Allreduce(MAX)</code> for a shared stable timestep (<code>Δt</code>)</li>
+                    <li>Poisson (SOR) uses frequent ghost exchange + reductions for convergence checks</li>
+                    <li>A final barrier synchronises ranks before output is written</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Hybrid</div>
+              <h2 class="section-title subheader-text">MPI + OpenMP</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="hpc-grid-2">
+              <div class="hpc-card">
+                <div class="hpc-card-title">Why hybrid</div>
+                <div class="body-text hpc-muted">
+                  Hybrid parallelism uses MPI between nodes and OpenMP within a node. The motivation is to reduce the number of MPI ranks (and therefore communication)
+                  while still using all cores available on each node.
+                </div>
+                <ul class="bullet-list">
+                  <li>MPI: distributed memory across nodes</li>
+                  <li>OpenMP: shared memory within each node</li>
+                  <li>Best when each rank has enough local work to amortise thread overhead</li>
+                </ul>
+              </div>
+              <div class="hpc-card">
+                <div class="hpc-card-title">What I changed</div>
+                <div class="body-text hpc-muted">
+                  Many loops already iterate independently over grid cells, so threading was added without restructuring the algorithm. Parallel regions use static scheduling,
+                  and reductions are used where functions accumulate values.
+                </div>
+                <ul class="bullet-list">
+                  <li><code>#pragma omp parallel for</code> on per-cell kernels</li>
+                  <li>OpenMP reductions in <code>poisson()</code> and timestep computation</li>
+                  <li>Boundary conditions kept serial after testing showed loop dependencies</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" id="results">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Results</div>
+              <h2 class="section-title subheader-text">Performance Highlights</h2>
+            </div>
+          </div>
+            <div class="section-body">
+              <div class="hpc-kpi-grid">
+                <div class="hpc-kpi">
+                  <div class="hpc-kpi-label">Peak MPI-only speedup</div>
+                  <div class="hpc-kpi-value">4.43×</div>
+                  <div class="body-text hpc-muted">1320×240 @ 16 nodes.</div>
+                </div>
+                <div class="hpc-kpi">
+                  <div class="hpc-kpi-label">Large-grid runtime</div>
+                  <div class="hpc-kpi-value">174.78s → 39.43s</div>
+                  <div class="body-text hpc-muted">1 node → 16 nodes.</div>
+                </div>
+                <div class="hpc-kpi">
+                  <div class="hpc-kpi-label">Best hybrid runtime</div>
+                  <div class="hpc-kpi-value">38.99s</div>
+                  <div class="body-text hpc-muted">4 nodes × 4 threads.</div>
+                </div>
+                <div class="hpc-kpi">
+                  <div class="hpc-kpi-label">Small-grid peak speedup</div>
+                  <div class="hpc-kpi-value">3.28×</div>
+                  <div class="body-text hpc-muted">660×120 @ 4 nodes.</div>
+                </div>
+              </div>
+
+                <figure class="hpc-figure u-mt-14">
+                  <img class="hpc-figure-img" src="../assets/hpc/speedupmpi.png" alt="Speedup vs number of MPI nodes for large and small grid sizes.">
+                  <figcaption class="body-text hpc-muted">
+                  MPI-only scaling: larger grids amortise communication; smaller grids become overhead-bound earlier.
+                </figcaption>
+              </figure>
+
+                <div class="hpc-card u-mt-14">
+                  <div class="hpc-card-title">MPI-only interpretation</div>
+                  <div class="body-text hpc-muted">
+                  The large grid improves steadily because each rank has enough local work per timestep to amortise fixed costs like ghost exchange and global reductions. As node count increases, local subdomains
+                  shrink and synchronisation overhead rises, especially in the Poisson solve, which interleaves computation with frequent boundary exchange and convergence reductions.
+                </div>
+                  <div class="body-text hpc-muted u-mt-10">
+                    The small grid peaks early (4 nodes) and then degrades because the compute per rank becomes too small: communication latency and collective overhead become a dominant fraction of runtime, so extra nodes
+                    add waiting rather than useful work.
+                  </div>
+                </div>
+
+              <details class="details u-mt-14">
+                <summary>Table: MPI-only runtime and speedup</summary>
+                <div class="u-mt-12 u-overflow-auto">
+                  <table class="hpc-table">
+                  <thead>
+                    <tr>
+                      <th>Nodes</th>
+                      <th>Large runtime (s)</th>
+                      <th>Large speedup</th>
+                      <th>Small runtime (s)</th>
+                      <th>Small speedup</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>1</td><td>174.78</td><td>1.00</td><td>19.94</td><td>1.00</td></tr>
+                    <tr><td>2</td><td>102.60</td><td>1.70</td><td>10.84</td><td>1.84</td></tr>
+                    <tr><td>4</td><td>63.25</td><td>2.76</td><td>6.08</td><td>3.28</td></tr>
+                    <tr><td>8</td><td>46.53</td><td>3.76</td><td>7.77</td><td>2.57</td></tr>
+                    <tr><td>12</td><td>40.90</td><td>4.27</td><td>8.99</td><td>2.22</td></tr>
+                    <tr><td>16</td><td>39.43</td><td>4.43</td><td>10.70</td><td>1.86</td></tr>
+                    <tr><td>20</td><td>40.79</td><td>4.28</td><td>12.35</td><td>1.61</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              </details>
+
+                <figure class="hpc-figure u-mt-14">
+                  <img class="hpc-figure-img" src="../assets/hpc/hybridspeedup.png" alt="Hybrid speedup vs OpenMP threads per MPI node for 1, 2, 4, and 8 MPI nodes.">
+                  <figcaption class="body-text hpc-muted">
+                  Hybrid speedup vs OpenMP threads: threading helps most when each MPI rank still owns a sizeable local domain.
+                </figcaption>
+              </figure>
+
+                <div class="hpc-card u-mt-14">
+                  <div class="hpc-card-title">Hybrid interpretation</div>
+                  <div class="body-text hpc-muted">
+                  Adding OpenMP reduces runtime consistently as threads increase for a fixed number of MPI nodes, but the gain depends on how much work each rank has. At low MPI counts (1–4 nodes),
+                  each rank owns a larger subdomain, so threads have enough local work to offset their overhead and deliver strong improvements.
+                </div>
+                  <div class="body-text hpc-muted u-mt-10">
+                    At higher MPI counts (8 nodes), the local domain per rank shrinks and hybrid benefits taper. The critical path (Poisson) becomes increasingly dominated by communication and synchronisation:
+                    halo exchange, reductions for norms/residuals, and general contention/bandwidth limits.
+                  </div>
+                  <ul class="bullet-list u-mt-10">
+                    <li><b>Practical win:</b> 2 nodes × 4 threads (46.14s) is comparable to a 4-node MPI-only run (63.25s) without increasing MPI process count.</li>
+                    <li><b>Thread overhead:</b> hybrid can be slower than MPI-only at low thread counts.</li>
+                    <li><b>Top-end limit:</b> more threads can’t fix communication-bound iterations.</li>
+                  </ul>
+                </div>
+
+                <details class="details u-mt-14">
+                  <summary>Table: hybrid runtime and speedup</summary>
+                  <div class="u-mt-12 u-overflow-auto">
+                    <table class="hpc-table">
+                    <thead>
+                      <tr>
+                        <th>MPI nodes</th>
+                        <th>Threads</th>
+                        <th>Runtime (s)</th>
+                        <th>Speedup</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>1</td><td>1</td><td>169.20</td><td>1.00</td></tr>
+                      <tr><td>1</td><td>2</td><td>99.61</td><td>1.70</td></tr>
+                      <tr><td>1</td><td>3</td><td>76.06</td><td>2.22</td></tr>
+                      <tr><td>1</td><td>4</td><td>61.67</td><td>2.74</td></tr>
+                      <tr><td>2</td><td>1</td><td>111.21</td><td>1.52</td></tr>
+                      <tr><td>2</td><td>2</td><td>70.38</td><td>2.40</td></tr>
+                      <tr><td>2</td><td>3</td><td>55.28</td><td>3.06</td></tr>
+                      <tr><td>2</td><td>4</td><td>46.14</td><td>3.67</td></tr>
+                      <tr><td>4</td><td>1</td><td>76.72</td><td>2.21</td></tr>
+                      <tr><td>4</td><td>2</td><td>52.85</td><td>3.20</td></tr>
+                      <tr><td>4</td><td>3</td><td>43.86</td><td>3.86</td></tr>
+                      <tr><td>4</td><td>4</td><td>38.99</td><td>4.34</td></tr>
+                      <tr><td>8</td><td>1</td><td>65.40</td><td>2.59</td></tr>
+                      <tr><td>8</td><td>2</td><td>51.79</td><td>3.27</td></tr>
+                      <tr><td>8</td><td>3</td><td>46.60</td><td>3.63</td></tr>
+                      <tr><td>8</td><td>4</td><td>43.57</td><td>3.88</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+
+                <figure class="hpc-figure u-mt-14">
+                  <img class="hpc-figure-img" src="../assets/hpc/hybridfuncs8.png" alt="Function-wise speedup vs OpenMP threads at 8 MPI nodes.">
+                  <figcaption class="body-text hpc-muted">
+                  Function-wise speedup at 8 MPI nodes: kernels with little communication scale better; Poisson is capped by synchronisation.
+                </figcaption>
+              </figure>
+
+                <div class="hpc-card u-mt-14">
+                  <div class="hpc-card-title">What the function-level plot is telling you</div>
+                  <div class="body-text hpc-muted">
+                  Not all functions benefit equally from threading. Kernels like RHS computation have minimal communication and scale well with threads. The Poisson solver improves more slowly because it interleaves
+                  computation with frequent halo exchange and global convergence checks; as MPI nodes increase, those synchronisation points dominate the iteration loop.
+                </div>
+                  <ul class="bullet-list u-mt-10">
+                    <li><b>Good thread scaling:</b> independent per-cell loops with little or no MPI.</li>
+                    <li><b>Limited scaling:</b> iterative solvers with reductions and boundary exchange on every sweep.</li>
+                    <li><b>Design lesson:</b> optimising the critical path matters more than improving already-fast kernels.</li>
+                  </ul>
+                </div>
+            </div>
+          </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Conclusion</div>
+              <h2 class="section-title subheader-text">Key Takeaways</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="hpc-grid-2">
+              <div class="hpc-card">
+                <div class="hpc-card-title">What worked</div>
+                <ul class="bullet-list">
+                  <li>1D decomposition matched the problem shape and reduced communication.</li>
+                  <li>Ghost exchange preserved correctness across subdomain boundaries.</li>
+                  <li>Hybrid MPI+OpenMP improved runtimes when each rank had sufficient local work.</li>
+                </ul>
+              </div>
+              <div class="hpc-card">
+                <div class="hpc-card-title">What this demonstrates</div>
+                <ul class="bullet-list">
+                  <li>Designing parallel decompositions based on compute/communication trade-offs.</li>
+                  <li>Engineering correctness in distributed solvers (reductions, halo exchange, boundary handling).</li>
+                  <li>Profiling-driven optimisation.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Links</div>
+              <h2 class="section-title subheader-text">Jump In</h2>
+            </div>
+          </div>
+          <div class="link-grid">
+            <a class="link-tile" href="../assets/pdfs/hpc.pdf">
+              <div class="link-tile-title">Full report (PDF)</div>
+              <div class="body-text link-tile-desc">Implementation notes, plots, and full tables.</div>
+            </a>
+            <a class="link-tile" href="#top">
+              <div class="link-tile-title">Back to top</div>
+              <div class="body-text link-tile-desc">Return to the top of the page.</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="footer"></div>
+  </body>
+</html>

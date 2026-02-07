@@ -1,0 +1,460 @@
+/* Project pages stylesheet.
+ *
+ * This file groups all per-project styles so every project page can share
+ * a single project stylesheet.
+ *
+ * Merged from:
+ * - hpc.css
+ * - nba-vision.css
+ * - neg-gem.css
+ */
+
+/* Shared */
+.hpc-card,
+.hpc-kpi,
+.nv-card,
+.nv-kpi,
+.ng-card,
+.ng-metric {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--surface);
+}
+
+/* --- hpc.css --- */
+.hpc-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.hpc-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hpc-card-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.hpc-muted {
+  color: var(--muted);
+}
+
+.hpc-callout {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.hpc-callout-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.hpc-figure {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.hpc-figure-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+
+.hpc-figure figcaption {
+  margin-top: 10px;
+}
+
+.hpc-eqn {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  padding: 12px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.hpc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.hpc-table th,
+.hpc-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.hpc-table th {
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+
+.hpc-table tr:last-child td { border-bottom: none; }
+
+.hpc-figure-slot {
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  min-height: 220px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hpc-figure-title {
+  font-weight: 900;
+}
+
+.hpc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hpc-kpi-label {
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.hpc-kpi-value {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 900px) {
+  .hpc-grid-2 { grid-template-columns: 1fr; }
+  .hpc-grid-3 { grid-template-columns: 1fr; }
+  .hpc-kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* --- nba-vision.css --- */
+.nv-grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.nv-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.nv-card-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.nv-muted {
+  color: var(--muted);
+}
+
+.nv-callout {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.nv-callout-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.nv-steps {
+  margin: 10px 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nv-figure-slot {
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  padding: 14px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.nv-figure-title {
+  font-weight: 900;
+}
+
+.nv-figure {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  margin: 0;
+}
+
+.nv-figure-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+
+.nv-figure figcaption {
+  margin-top: 10px;
+}
+
+.nv-eqn {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  padding: 12px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.35;
+  margin-top: 10px;
+}
+
+.nv-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.nv-kpi-label {
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.nv-kpi-value {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.nv-link-tile-disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.nv-link-tile-disabled:hover {
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .nv-grid-2 { grid-template-columns: 1fr; }
+  .nv-kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* --- neg-gem.css --- */
+.ng-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.ng-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.ng-card-title {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.ng-muted {
+  color: var(--muted);
+}
+
+.ng-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.ng-metric-label {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.ng-metric-value {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.ng-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.ng-table th,
+.ng-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 14px;
+}
+
+.ng-table th {
+  font-weight: 900;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+
+.ng-table tr:last-child td { border-bottom: none; }
+
+.ng-row-strong td:first-child {
+  font-weight: 900;
+}
+
+.ng-row-strong td {
+  background: linear-gradient(135deg, rgba(91, 75, 255, 0.10), rgba(161, 75, 147, 0.08));
+}
+
+.ng-figure {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  margin: 0;
+}
+
+.ng-figure-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+
+.ng-figure figcaption {
+  margin-top: 10px;
+}
+
+.ng-figure-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.project-page-neg-gem .ng-figure a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ng-graph-slot {
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  min-height: 220px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ng-graph-slot-wide {
+  min-height: 260px;
+  justify-content: flex-start;
+}
+
+.ng-graph-title {
+  font-weight: 900;
+}
+
+.ng-eqn {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  padding: 12px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.project-page-neg-gem .details {
+  border-top-color: var(--border);
+}
+
+.project-page-neg-gem .details summary {
+  color: var(--text);
+}
+
+.project-page-neg-gem .ng-contents a,
+.project-page-neg-gem .ng-contents a:visited,
+.project-page-neg-gem a.ng-contents-link,
+.project-page-neg-gem a.ng-contents-link:visited {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 700;
+  transition: color 150ms ease-in-out;
+}
+
+.project-page-neg-gem .ng-contents a:hover,
+.project-page-neg-gem a.ng-contents-link:hover {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.project-page-neg-gem .ng-contents a:focus-visible,
+.project-page-neg-gem a.ng-contents-link:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .ng-grid-2 { grid-template-columns: 1fr; }
+  .ng-grid-3 { grid-template-columns: 1fr; }
+  .ng-metrics-grid { grid-template-columns: 1fr; }
+}

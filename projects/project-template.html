@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" id="top">
+  <head>
+    <meta charset="utf-8">
+
+    <link rel="icon" href="../assets/images/favicon.ico">
+    <title>Project Template</title>
+    <meta name="description" content="Project page template.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light'
+      } catch (_) {
+        document.documentElement.dataset.theme = 'light'
+      }
+    </script>
+
+    <link rel="stylesheet" href="../css/site.css">
+    <link rel="stylesheet" href="../css/projects.css">
+
+    <script defer src="../js/script.js"></script>
+  </head>
+  <body class="project-theme-glass" data-root="../">
+    <div id="navbar"></div>
+
+    <div id="main-content">
+      <div class="project-shell">
+        <div class="project-hero">
+          <div class="hero-top">
+            <div class="main-title">Project Title</div>
+            <div class="body-text hero-subtitle">
+              1-liner: what it is, why it matters, and your role (keep this recruiter-skimmable).
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <a class="button" href="#">
+              <span class="button-text">Live Demo</span>
+              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+            <a class="button" href="#">
+              <span class="button-text">GitHub</span>
+              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+            <a class="button" href="#details">
+              <span class="button-text">Details</span>
+              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">At A Glance</div>
+              <h2 class="section-title subheader-text">Highlights</h2>
+            </div>
+          </div>
+          <div class="highlights-grid">
+            <div class="highlight">
+              <div class="highlight-title">Problem</div>
+              <div class="body-text">What problem did you solve?</div>
+            </div>
+            <div class="highlight">
+              <div class="highlight-title">What I built</div>
+              <div class="body-text">What did you implement end-to-end?</div>
+            </div>
+            <div class="highlight">
+              <div class="highlight-title">Impact</div>
+              <div class="body-text">Numbers or outcomes (latency, accuracy, speedup, etc.).</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Links</div>
+              <h2 class="section-title subheader-text">Jump In</h2>
+            </div>
+          </div>
+          <div class="link-grid">
+            <a class="link-tile" href="#">
+              <div class="link-tile-title">Writeup</div>
+              <div class="body-text link-tile-desc">Short explanation with diagrams and key decisions.</div>
+            </a>
+            <a class="link-tile" href="#">
+              <div class="link-tile-title">Report / PDF</div>
+              <div class="body-text link-tile-desc">Optional: full report (for deep readers).</div>
+            </a>
+            <a class="link-tile" href="#top">
+              <div class="link-tile-title">Back to top</div>
+              <div class="body-text link-tile-desc">Return to the top of the page.</div>
+            </a>
+          </div>
+        </div>
+
+        <div class="section" id="details">
+          <div class="section-header-row">
+            <div>
+              <div class="section-kicker">Body</div>
+              <h2 class="section-title subheader-text">Details (Optional)</h2>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="body-text">
+              Add a few short sections here (architecture, challenges, results). Keep paragraphs short and use bullets.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="footer"></div>
+  </body>
+</html>
