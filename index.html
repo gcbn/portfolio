@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <link rel="icon" href="./assets/images/favicon.ico">
+    <title>Guney Coban</title>
+    <meta name="description" content="Portfolio.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      try {
+        document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light'
+      } catch (_) {
+        document.documentElement.dataset.theme = 'light'
+      }
+    </script>
+
+    <link rel="stylesheet" href="./css/site.css">
+
+    <script defer src="./js/script.js"></script>
+  </head>
+  <body data-root="./">
+    <div id="navbar"></div>
+    <!-- MAIN PAGE CONTENT -->
+    <div id="main-content">
+
+      <!-- PORTFOLIO HEADER -->
+      <div id="portfolio-header">
+        <div id="portfolio-header-image-container">
+          <img src="./assets/images/guney.png" class="portfolio-header-image" alt="Portrait of Guney Coban">
+        </div>
+
+        <div id="portfolio-header-text-container">
+          <div class="header-text">
+            <span class="main-title">Guney Coban</span>
+            <div class="body-text">&nbsp;</div>
+            <div class="body-text">Software Engineer</div>
+            <div class="body-text">MEng Computer Science @ University of Warwick</div>
+          </div>
+          <div class="button-row">
+            <a class="button" id="my-work-link">
+              <span class="button-text">Projects</span>
+              <img src="./assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+            <!-- <a class="button" href="./blog/index.html">
+              <span class="button-text">Blog</span>
+              <img src="./assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a> -->
+          </div>
+        </div>
+      </div>
+
+      <div id="about-section">
+        <span class="subheader-text">About Me</span>
+        <div class="about-section-content">
+          <div class="body-text">
+            I’m a software engineer who enjoys building things. I care about the design choices that make systems performant and reliable, and I’m a computer scientist at heart, always curious about new research and the ideas behind it.
+          </div>
+          <div class="skills-block">
+            <span class="subheader-text">Technical Skills</span>
+            <div class="skills-list">
+              <div class="body-text">Languages: Python, Java, C, SQL</div>
+              <div class="body-text">Frameworks &amp; Libraries: Spring Boot, PyTorch, Numpy, Pandas, MPI</div>
+              <div class="body-text">Developer Tools: Git, UNIX, Jira, Bamboo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROJECTS / MY WORK SECTION -->
+      <div id="my-work-section">
+        <span class="subheader-text">My Projects</span>
+
+        <div class="projects-container">
+          <div class="project-card">
+            <div class="project-card-media media-neg-gem" aria-hidden="true"></div>
+            <div class="project-card-text-container">
+              <div class="subheader-text project-title">Neg-GEM</div>
+              <div class="body-text project-card-text">
+                Framework to develop and test methods that can effectively
+                <span class="u-text-accent">unlearn</span> data in a
+                <span class="u-text-accent">continual learning</span> setting.
+              </div>
+              <div class="body-text project-card-text"><i>Python, PyTorch, NumPy, ML Research</i></div>
+            </div>
+            <a class="button" href="projects/neg-gem.html">
+              <span class="button-text">Read More</span>
+              <img src="./assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+          </div>
+          <div class="project-card">
+            <div class="project-card-media media-nba" aria-hidden="true"></div>
+            <div class="project-card-text-container">
+              <div class="subheader-text project-title">NBA Vision</div>
+              <div class="body-text project-card-text">Computer vision project to map plays from TV footage of NBA games into a 2D representation.</div>
+              <div class="body-text project-card-text"><i>Python, PyTorch, YOLO, OpenCV</i></div>
+            </div>
+            <a class="button" href="projects/nba-vision.html">
+              <span class="button-text">Read More</span>
+              <img src="./assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+          </div>
+          <div class="project-card">
+            <div class="project-card-media media-hpc" aria-hidden="true"></div>
+            <div class="project-card-text-container">
+              <div class="subheader-text project-title">HPC Coursework</div>
+              <div class="body-text project-card-text">High Performance Computing project to parallelise a problem in Computational Fluid Dynamics, achieving 5x speedup.</div>
+              <div class="body-text project-card-text"><i>C, MPI, OpenMP</i></div>
+            </div>
+            <a class="button" href="projects/hpc.html">
+              <span class="button-text">Read More</span>
+              <img src="./assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+          </div>
+          <div class="project-card">
+            <div class="project-card-media media-exchange" aria-hidden="true"></div>
+            <div class="project-card-text-container">
+              <div class="subheader-text project-title">Low Latency Exchange</div>
+              <div class="body-text project-card-text">
+                In Progress: Building a low-latency exchange in C++ to learn the optimisations and design patterns required to process hundreds of thousands of trades per second.
+              </div>
+              <div class="body-text project-card-text"><i>C++, Systems Programming</i></div>
+            </div>
+            <a class="button" href="projects/exchange.html">
+              <span class="button-text">Read More</span>
+              <img src="./assets/icons/arrow-right.svg" class="button-icon" alt="">
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- FOOTER -->
+    <div id="footer"></div>
+  </body>
+</html>
