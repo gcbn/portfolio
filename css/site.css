@@ -203,10 +203,10 @@ body {
         url("../assets/projects/hpc.jpg") center / cover no-repeat;
     }
 
-    .project-card-media.media-exchange {
+    .project-card-media.media-private-ai {
       background:
         linear-gradient(180deg, rgba(13, 15, 23, 0.15), rgba(13, 15, 23, 0.35)),
-        url("../assets/projects/exchange.jpg") center / cover no-repeat;
+        url("../assets/projects/conforming.png") center / cover no-repeat;
     }
 
     

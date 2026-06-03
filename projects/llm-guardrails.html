@@ -4,10 +4,10 @@
     <meta charset="utf-8">
 
     <link rel="icon" href="../assets/images/favicon.ico">
-    <title>Low Latency Exchange</title>
+    <title>LLM Quality Assurance</title>
     <meta
       name="description"
-      content="Building a low-latency exchange simulator in C++ with a focus on correctness, determinism, and measured performance.">
+      content="Building a live inference-time layer that uses conformal runtime verification and prediction to ensure outputs satisfy user-defined rules and quality constraints.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
       try {
@@ -30,25 +30,11 @@
       <div class="project-shell">
         <div class="project-hero">
           <div class="hero-top">
-            <div class="main-title">Low Latency Exchange</div>
+            <div class="main-title">LLM Quality Assurance</div>
             <div class="body-text hero-subtitle">
-              A C++ exchange simulator focused on correctness, determinism, and performance.
-            </div>
-            <div class="body-text hero-subtitle">
-              This page will be updated with blog entries and project progress as I build.
+              In progress: building a live inference-time layer that uses conformal runtime verification and prediction to ensure outputs satisfy user-defined rules and quality constraints.
             </div>
           </div>
-
-          <!-- <div class="hero-actions">
-            <a class="button" href="https://github.com/gcbn/Low-Latency-Exchange">
-              <span class="button-text">GitHub Repo</span>
-              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
-            </a>
-            <a class="button" href="../blog/index.html">
-              <span class="button-text">Devlog</span>
-              <img src="../assets/icons/arrow-right.svg" class="button-icon" alt="">
-            </a>
-          </div> -->
         </div>
 
         <div class="section">
@@ -60,13 +46,7 @@
 
           <div class="section-body">
             <div class="body-text">
-              I am building a low-latency exchange simulator in C++ that focuses on correctness, determinism, and
-              measured performance. The core components include a limit order book, matching engine, and market data
-              dissemination system.
-            </div>
-            <div class="body-text">
-              The project aims to simulate the behaviour of a real-world exchange, processing orders and trades with
-              minimal latency while ensuring accurate order matching and market data updates.
+              An inference-time layer that ensures outputs follow user rules and quality limits. It uses runtime checks and prediction to maintain high quality while keeping generation flexible and costs low.
             </div>
           </div>
         </div>
@@ -79,7 +59,8 @@
           </div>
           <div class="section-body">
             <div class="body-text">
-              Building a limit order book and matching engine from scratch is a practical way to understand how exchanges work under the hood. It also provides a focused environment to learn real-world C++ and systems optimisations by iterating on a single codebase and directly observing how low-level design decisions affect performance.
+              Making AI systems more dependable at the point of use, especially when the
+              output needs custom guardrails.
             </div>
           </div>
         </div>
