@@ -204,11 +204,9 @@ body {
     }
 
     .project-card-media.media-private-ai {
-      background-color: #eef4fb;
-      background-image: url("../assets/projects/conforming.png");
-      background-position: center;
-      background-size: contain;
-      background-repeat: no-repeat;
+      background:
+        linear-gradient(180deg, rgba(13, 15, 23, 0.15), rgba(13, 15, 23, 0.35)),
+        url("../assets/projects/conforming.png") center / cover no-repeat;
     }
 
     
